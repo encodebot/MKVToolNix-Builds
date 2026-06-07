@@ -34,8 +34,11 @@ jobs:
           
           echo "Fetching Latest MKVToolNix Source..."
           # Uses advanced RegEx to extract ONLY stable versions and sorts them mathematically
-          MKV_VERSION=$(curl -fsSL "https://mkvtoolnix.download/sources/" | grep -oP '(?<=href="mkvtoolnix-)\d+\.\d+(\.\d+)?(?=\.tar\.xz")' | sort -Vu | tail -n 1)
-          test -n "$MKV_VERSION" || { echo "❌ FATAL ERROR: Failed to detect latest MKVToolNix version."; exit 1; }
+          MKV_VERSION=$(curl -fsSL "https://codeberg.org/api/v1/repos/mbunkus/mkvtoolnix/tags" | jq -r '.[].name' | grep -oP '^release-\K\d+\.\d+(\.\d+)?$' | sort -Vu | tail -n 1 || true)
+          if [ -z "$MKV_VERSION" ]; then
+            echo "❌ FATAL ERROR: Failed To Detect Latest MKVToolNix Version.."
+            exit 1
+          fi
           echo "💡 Latest MKVToolNix version detected: $MKV_VERSION"
 
           # Fetch latest release tag safely using strict JSON parsing
@@ -87,7 +90,6 @@ jobs:
             --cache-to type=gha,mode=max,scope=mkvtoolnix-${{ matrix.arch }} \
             --cache-from type=gha,scope=mkvtoolnix-${{ matrix.arch }} \
             -f Dockerfile .
-
           # Navigate to output and compress the entire MKVToolNix directory structure into a tar.xz archive
           cd ./output
           TAR_FILENAME="mkvtoolnix-master-latest-${{ matrix.ext_name }}-gpl.tar.xz"
@@ -151,7 +153,6 @@ jobs:
           set -euo pipefail
           
           TAG_NAME="v$VERSION"
-          
           # Defensive check: Ensure release doesn't already exist to prevent race conditions
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             echo "✅ Release $TAG_NAME already exists. Skipping creation."
