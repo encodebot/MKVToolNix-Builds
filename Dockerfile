@@ -21,13 +21,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgmp-dev \
     libvorbis-dev \
     libflac-dev \
-    gettext \
+    qt6-base-dev \
+    qt6-base-dev-tools \
     file \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Set PKG_CONFIG_PATH globally so MKVToolNix prioritizes custom compiled libraries.
-# Fixed: Removed $(uname -m) and self-referencing variables to comply with Docker ENV syntax.
 ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/aarch64-linux-gnu/pkgconfig"
 
 # ==========================================
@@ -126,11 +126,10 @@ RUN wget --progress=dot:giga "https://mkvtoolnix.download/sources/mkvtoolnix-${M
 WORKDIR /mkvtoolnix-${MKV_VERSION}
 
 # Configure the build. 
-# Explicitly disable the GUI and Qt to save massive amounts of compilation time and space.
+# Explicitly disable the GUI to save massive amounts of compilation time and space.
 RUN ./configure \
     --prefix=/mkvtoolnix-build \
     --disable-gui \
-    --disable-qt \
     --disable-update-check
 
 # Compile with multi-core support directly passed to rake.
