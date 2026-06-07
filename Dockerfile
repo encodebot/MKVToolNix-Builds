@@ -5,6 +5,8 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Set non-interactive frontend for apt to prevent hanging prompts
 ENV DEBIAN_FRONTEND=noninteractive
+# Force UTF-8 encoding for Ruby and build tools to prevent US-ASCII byte sequence errors
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 # 1. Install ONLY the core build tools and verified stable C libraries.
 RUN apt-get update && apt-get install -y --no-install-recommends \
