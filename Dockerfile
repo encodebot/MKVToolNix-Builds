@@ -26,8 +26,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
-# Set PKG_CONFIG_PATH globally so MKVToolNix prioritizes custom compiled libraries
-ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/lib/$(uname -m)-linux-gnu/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH"
+# Set PKG_CONFIG_PATH globally so MKVToolNix prioritizes custom compiled libraries.
+# Fixed: Removed $(uname -m) and self-referencing variables to comply with Docker ENV syntax.
+ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/aarch64-linux-gnu/pkgconfig"
 
 # ==========================================
 # 🛠️ COMPILE LATEST LIBRARIES FROM SOURCE (STATICALLY)
@@ -108,8 +109,7 @@ RUN echo "Fetching latest Boost version..." && \
     wget -q --show-progress "https://archives.boost.io/release/${BOOST_VERSION}/source/boost_${BOOST_UNDERSCORE}.tar.bz2" -O boost.tar.bz2 && \
     tar -xf boost.tar.bz2 && cd "boost_${BOOST_UNDERSCORE}" && \
     ./bootstrap.sh --prefix=/usr/local && \
-    ./b2 -j"$(nproc)" link=static variant=release threading=multi \
-    --with-system --with-filesystem --with-regex --with-date_time install && \
+    ./b2 -j"$(nproc)" link=static variant=release threading=multi install && \
     cd .. && rm -rf boost*
 
 # ==========================================
@@ -125,11 +125,8 @@ RUN wget --progress=dot:giga "https://mkvtoolnix.download/sources/mkvtoolnix-${M
 
 WORKDIR /mkvtoolnix-${MKV_VERSION}
 
-# Ensure MKVToolNix configure script finds custom compiled static libraries
-ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH"
-
 # Configure the build. 
-# We explicitly disable the GUI and Qt to save massive amounts of compilation time and space.
+# Explicitly disable the GUI and Qt to save massive amounts of compilation time and space.
 RUN ./configure \
     --prefix=/mkvtoolnix-build \
     --disable-gui \
