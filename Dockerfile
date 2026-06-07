@@ -23,6 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libflac-dev \
     qt6-base-dev \
     qt6-base-dev-tools \
+    docbook-xsl \
+    xsltproc \
+    po4a \
     file \
     jq \
     && rm -rf /var/lib/apt/lists/*
@@ -126,7 +129,6 @@ RUN wget --progress=dot:giga "https://mkvtoolnix.download/sources/mkvtoolnix-${M
 WORKDIR /mkvtoolnix-${MKV_VERSION}
 
 # Configure the build. 
-# Explicitly disable the GUI to save massive amounts of compilation time and space.
 RUN ./configure \
     --prefix=/mkvtoolnix-build \
     --disable-gui \
