@@ -19,7 +19,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     pkg-config \
     ruby \
-    rake \
     libgmp-dev \
     libvorbis-dev \
     libflac-dev \
@@ -30,7 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     po4a \
     file \
     jq \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && \
+    gem install rake --no-document
 
 # Set PKG_CONFIG_PATH globally so MKVToolNix prioritizes custom compiled libraries.
 ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/aarch64-linux-gnu/pkgconfig"
