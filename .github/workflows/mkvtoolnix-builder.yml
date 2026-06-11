@@ -1,6 +1,7 @@
 name: Build MKVToolNix
 
 on:
+  push:
   schedule:
     # Runs at 02:00 UTC On Sundays, Tuesdays, Thursdays, and Saturdays
     - cron: '0 2 * * 0,2,4,6'
@@ -8,10 +9,6 @@ on:
 
 permissions:
   contents: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  NODE_OPTIONS: "--no-deprecation"
 
 jobs:
   check-version:
@@ -23,7 +20,7 @@ jobs:
       version: ${{ steps.check.outputs.version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check Upstream Version vs Latest Release
         id: check
@@ -31,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          
+
           echo "Fetching Latest MKVToolNix Source..."
           # Uses advanced RegEx to extract ONLY stable versions and sorts them mathematically
           MKV_VERSION=$(curl -fsSL "https://codeberg.org/api/v1/repos/mbunkus/mkvtoolnix/tags" | jq -r '.[].name' | grep -oP '^release-\K\d+\.\d+(\.\d+)?$' | sort -Vu | tail -n 1 || true)
@@ -73,19 +70,20 @@ jobs:
             ext_name: linuxarm64
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build, Extract, and Compress Binary
         run: |
           set -euo pipefail
           mkdir -p ./output ./artifacts
-          
+
           docker buildx build \
             --platform linux/${{ matrix.arch }} \
             --build-arg MKV_VERSION=${{ needs.check-version.outputs.version }} \
+            --build-arg GH_TOKEN=${{ secrets.GITHUB_TOKEN }} \
             --output type=local,dest=./output \
             --cache-to type=gha,mode=max,scope=mkvtoolnix-${{ matrix.arch }} \
             --cache-from type=gha,scope=mkvtoolnix-${{ matrix.arch }} \
@@ -97,7 +95,7 @@ jobs:
           cd ..
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mkvtoolnix-${{ matrix.arch }}
           path: ./artifacts/mkvtoolnix-master-latest-${{ matrix.ext_name }}-gpl.tar.xz
@@ -111,12 +109,12 @@ jobs:
     timeout-minutes: 72 # Safety net for GitHub API uploads
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: ./artifacts
           merge-multiple: true
@@ -151,14 +149,14 @@ jobs:
           VERSION: ${{ needs.check-version.outputs.version }}
         run: |
           set -euo pipefail
-          
+
           TAG_NAME="v$VERSION"
           # Defensive check: Ensure release doesn't already exist to prevent race conditions
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             echo "✅ Release $TAG_NAME already exists. Skipping creation."
             exit 0
           fi
-          
+
           DATE_STR=$(date -u +'%d/%m/%Y At %H:%M')
           COMMIT_MSG=$(git log -1 --pretty=%B | head -n 1)
           PREV_HASH=$(git log -2 --pretty=%H | tail -n 1)
@@ -168,7 +166,7 @@ jobs:
           $COMMIT_MSG
           This reverts commit $PREV_HASH.
           EOF
-          
+
           echo "Creating release for $TAG_NAME..."
           gh release create "$TAG_NAME" ./artifacts/* \
             --title "MKVToolNix $VERSION (Executable) - Latest" \
@@ -179,10 +177,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          
+
           echo "Fetching all releases safely via JSON..."
           RELEASES=$(gh release list --limit 100 --json tagName --jq '.[].tagName')
-          
+
           COUNT=0
           for REL in $RELEASES; do
             if [ -z "$REL" ] || [ "$REL" == "null" ]; then continue; fi
@@ -202,17 +200,17 @@ jobs:
     timeout-minutes: 61 # Safety net for git push
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Push Keepalive Commit
         run: |
           set -euo pipefail
-          
+
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git checkout -B dev
           git commit --allow-empty -m "chore: keepalive to prevent GitHub Actions cron pause [skip ci]"
           git push origin dev --force

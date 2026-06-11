@@ -7,7 +7,8 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 # Force UTF-8 encoding for Ruby and build tools to prevent US-ASCII byte sequence errors
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
-
+# Accept MKVToolNix version as a dynamic build argument
+ARG MKV_VERSION
 # 1. Install ONLY the core build tools and verified stable C libraries.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -57,6 +58,9 @@ RUN echo "Fetching latest libogg version..." && \
     echo "💡 Building libogg version: $OGG_VERSION" && \
     wget -q --show-progress "https://github.com/xiph/ogg/archive/refs/tags/v${OGG_VERSION}.tar.gz" -O libogg.tar.gz && \
     tar -xf libogg.tar.gz && cd ogg-${OGG_VERSION} && \
+    CMAKE_VER=$(cmake --version | head -n 1 | grep -oP '\d+\.\d+(\.\d+)?') && \
+    sed -i -e "s/^[[:space:]]*cmake_minimum_required.*/cmake_minimum_required(VERSION ${CMAKE_VER})/I" CMakeLists.txt && \
+    echo "-- CMake version: $CMAKE_VER" && \
     cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_SHARED_LIBS=OFF . && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf libogg* ogg*
@@ -90,6 +94,9 @@ RUN echo "Fetching latest libebml version..." && \
     echo "💡 Building libebml version: $EBML_VERSION" && \
     wget -q --show-progress "https://github.com/Matroska-Org/libebml/archive/refs/tags/release-${EBML_VERSION}.tar.gz" -O libebml.tar.gz && \
     tar -xf libebml.tar.gz && cd libebml-release-${EBML_VERSION} && \
+    CMAKE_VER=$(cmake --version | head -n 1 | grep -oP '\d+\.\d+(\.\d+)?') && \
+    sed -i -e "s/^[[:space:]]*cmake_minimum_required.*/cmake_minimum_required(VERSION ${CMAKE_VER})/I" CMakeLists.txt && \
+    echo "-- CMake version: $CMAKE_VER" && \
     cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_SHARED_LIBS=OFF . && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf libebml*
@@ -101,6 +108,9 @@ RUN echo "Fetching latest libmatroska version..." && \
     echo "💡 Building libmatroska version: $MATROSKA_VERSION" && \
     wget -q --show-progress "https://github.com/Matroska-Org/libmatroska/archive/refs/tags/release-${MATROSKA_VERSION}.tar.gz" -O libmatroska.tar.gz && \
     tar -xf libmatroska.tar.gz && cd libmatroska-release-${MATROSKA_VERSION} && \
+    CMAKE_VER=$(cmake --version | head -n 1 | grep -oP '\d+\.\d+(\.\d+)?') && \
+    sed -i -e "s/^[[:space:]]*cmake_minimum_required.*/cmake_minimum_required(VERSION ${CMAKE_VER})/I" CMakeLists.txt && \
+    echo "-- CMake version: $CMAKE_VER" && \
     cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_SHARED_LIBS=OFF . && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf libmatroska*
@@ -120,10 +130,6 @@ RUN echo "Fetching latest Boost version..." && \
 # ==========================================
 # 🚀 COMPILE MKVTOOLNIX
 # ==========================================
-
-# Accept MKVToolNix version as a dynamic build argument
-ARG MKV_VERSION
-
 # Download and extract MKVToolNix source safely
 RUN wget --progress=dot:giga "https://mkvtoolnix.download/sources/mkvtoolnix-${MKV_VERSION}.tar.xz" -O mkvtoolnix_src.tar.xz && \
     tar -xf mkvtoolnix_src.tar.xz
