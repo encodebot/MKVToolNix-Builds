@@ -1,15 +1,15 @@
-FROM debian:trixie-slim AS builder
+FROM debian:forky-slim AS builder
 
-# Enforce strict error handling. Instantly aborts on any hidden failure.
+# Enforce Strict Error Handling. Instantly Aborts On Any Hidden Failure.
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Set non-interactive frontend for apt to prevent hanging prompts
+# Set Non-Interactive Frontend For Apt To Prevent Hanging Prompts.
 ENV DEBIAN_FRONTEND=noninteractive
-# Force UTF-8 encoding for Ruby and build tools to prevent US-ASCII byte sequence errors
+# Force UTF-8 Encoding For Ruby & Build Tools To Prevent US-ASCII Byte Sequence Errors.
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
-# Accept MKVToolNix version as a dynamic build argument
+# Accept MKVToolNix Version As A Dynamic Build Argument.
 ARG MKV_VERSION
-# 1. Install ONLY the core build tools and verified stable C libraries.
+# 1. Install ONLY The Core Build Tools & Verified Stable C Libraries.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
@@ -33,14 +33,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* && \
     gem install rake --no-document
 
-# Set PKG_CONFIG_PATH globally so MKVToolNix prioritizes custom compiled libraries.
+# 2. Set PKG_CONFIG_PATH Globally So MKVToolNix Prioritizes Custom Compiled Libraries.
 ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/aarch64-linux-gnu/pkgconfig"
 
-# ==========================================
-# 🛠️ COMPILE LATEST LIBRARIES FROM SOURCE (STATICALLY)
-# ==========================================
+# ====================================================== #
+#  COMPILE LATEST LIBRARIES FROM SOURCE (STATICALLY)     #
+# ====================================================== #
 
-# 1. Compile Absolute Latest 'zlib' (Statically Linked)
+# 1. Compile Absolute Latest 'zlib' (Statically Linked).
 RUN echo "Fetching latest zlib version..." && \
     ZLIB_VERSION=$(curl -fsSL "https://api.github.com/repos/madler/zlib/tags" | jq -r '.[].name' | grep -oP '^v\K\d+\.\d+(\.\d+)?$' | sort -Vu | tail -n 1 || true) && \
     if [ -z "$ZLIB_VERSION" ]; then echo "❌ FATAL ERROR: Failed to fetch zlib version"; exit 1; fi && \
@@ -51,7 +51,7 @@ RUN echo "Fetching latest zlib version..." && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf zlib*
 
-# 2. Compile Absolute Latest 'libogg' (Statically Linked)
+# 2. Compile Absolute Latest 'libogg' (Statically Linked).
 RUN echo "Fetching latest libogg version..." && \
     OGG_VERSION=$(curl -fsSL "https://api.github.com/repos/xiph/ogg/tags" | jq -r '.[].name' | grep -oP '^v\K\d+\.\d+(\.\d+)?$' | sort -Vu | tail -n 1 || true) && \
     if [ -z "$OGG_VERSION" ]; then echo "❌ FATAL ERROR: Failed to fetch libogg version"; exit 1; fi && \
@@ -65,7 +65,7 @@ RUN echo "Fetching latest libogg version..." && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf libogg* ogg*
 
-# 3. Compile Absolute Latest 'fmt' (Statically Linked)
+# 3. Compile Absolute Latest 'fmt' (Statically Linked).
 RUN echo "Fetching latest fmt version..." && \
     FMT_VERSION=$(curl -fsSL "https://api.github.com/repos/fmtlib/fmt/tags" | jq -r '.[].name' | grep -oP '^\d+\.\d+(\.\d+)?$' | sort -Vu | tail -n 1 || true) && \
     if [ -z "$FMT_VERSION" ]; then echo "❌ FATAL ERROR: Failed to fetch fmt version"; exit 1; fi && \
@@ -76,7 +76,7 @@ RUN echo "Fetching latest fmt version..." && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf fmt*
 
-# 4. Compile Absolute Latest 'pugixml' (Statically Linked)
+# 4. Compile Absolute Latest 'pugixml' (Statically Linked).
 RUN echo "Fetching latest pugixml version..." && \
     PUGI_VERSION=$(curl -fsSL "https://api.github.com/repos/zeux/pugixml/tags" | jq -r '.[].name' | grep -oP '^v\K\d+\.\d+(\.\d+)?$' | sort -Vu | tail -n 1 || true) && \
     if [ -z "$PUGI_VERSION" ]; then echo "❌ FATAL ERROR: Failed to fetch pugixml version"; exit 1; fi && \
@@ -87,7 +87,7 @@ RUN echo "Fetching latest pugixml version..." && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf pugixml*
 
-# 5. Compile Absolute Latest 'libebml' (Statically Linked)
+# 5. Compile Absolute Latest 'libebml' (Statically Linked).
 RUN echo "Fetching latest libebml version..." && \
     EBML_VERSION=$(curl -fsSL "https://api.github.com/repos/Matroska-Org/libebml/tags" | jq -r '.[].name' | grep -oP '^release-\K\d+\.\d+(\.\d+)?$' | sort -Vu | tail -n 1 || true) && \
     if [ -z "$EBML_VERSION" ]; then echo "❌ FATAL ERROR: Failed to fetch libebml version"; exit 1; fi && \
@@ -101,7 +101,7 @@ RUN echo "Fetching latest libebml version..." && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf libebml*
 
-# 6. Compile Absolute Latest 'libmatroska' (Statically Linked)
+# 6. Compile Absolute Latest 'libmatroska' (Statically Linked).
 RUN echo "Fetching latest libmatroska version..." && \
     MATROSKA_VERSION=$(curl -fsSL "https://api.github.com/repos/Matroska-Org/libmatroska/tags" | jq -r '.[].name' | grep -oP '^release-\K\d+\.\d+(\.\d+)?$' | sort -Vu | tail -n 1 || true) && \
     if [ -z "$MATROSKA_VERSION" ]; then echo "❌ FATAL ERROR: Failed to fetch libmatroska version"; exit 1; fi && \
@@ -115,7 +115,7 @@ RUN echo "Fetching latest libmatroska version..." && \
     make -j"$(nproc)" && make install && \
     cd .. && rm -rf libmatroska*
 
-# 7. Compile Absolute Latest 'Boost' (Statically Linked)
+# 7. Compile Absolute Latest 'Boost' (Statically Linked).
 RUN echo "Fetching latest Boost version..." && \
     BOOST_VERSION=$(curl -fsSL "https://archives.boost.io/release/" | grep -oP '(?<=href=")\d+\.\d+\.\d+(?=/")' | sort -Vu | tail -n 1 || true) && \
     if [ -z "$BOOST_VERSION" ]; then echo "❌ FATAL ERROR: Failed to fetch Boost version"; exit 1; fi && \
@@ -127,33 +127,33 @@ RUN echo "Fetching latest Boost version..." && \
     ./b2 -j"$(nproc)" link=static variant=release threading=multi install && \
     cd .. && rm -rf boost*
 
-# ==========================================
-# 🚀 COMPILE MKVTOOLNIX
-# ==========================================
-# Download and extract MKVToolNix source safely
+# ======================= #
+#  COMPILE MKVTOOLNIX     #
+# ======================= #
+# 1. Download & Extract MKVToolNix Source.
 RUN wget --progress=dot:giga "https://mkvtoolnix.download/sources/mkvtoolnix-${MKV_VERSION}.tar.xz" -O mkvtoolnix_src.tar.xz && \
     tar -xf mkvtoolnix_src.tar.xz
 
 WORKDIR /mkvtoolnix-${MKV_VERSION}
 
-# Configure the build. 
+# 2. Configure The Build.
 RUN ./configure \
     --prefix=/mkvtoolnix-build \
     --disable-gui \
     --disable-update-check
 
-# Compile with multi-core support directly passed to rake.
+# 3. Compile With Multi-Core Support Directly Passed To Rake.
 RUN rake -j"$(nproc)" && \
     rake install
 
-# ==========================================
-# 📦 PORTABLE WRAPPER GENERATION
-# ==========================================
-# 1. Create the portable directory structure
+# ================================= #
+#  PORTABLE WRAPPER GENERATION      #
+# ================================= #
+# 1. Create The Portable Directory Structure.
 RUN mkdir -p /mkvtoolnix-portable/bin /mkvtoolnix-portable/lib && \
     cp /mkvtoolnix-build/bin/mkv* /mkvtoolnix-portable/bin/
 
-# 2. Auto-detect and bundle any remaining shared libraries (.so files)
+# 2. Auto-Detect & Bundle Any Remaining Shared Libraries (.So Files).
 RUN for bin in /mkvtoolnix-portable/bin/mkv*; do \
         ldd "$bin" | grep "=> /" | awk '{print $3}' | while read -r lib; do \
             if [[ "$lib" != *"/libc.so"* && "$lib" != *"/libm.so"* && "$lib" != *"/libdl.so"* && "$lib" != *"/libpthread.so"* && "$lib" != *"/librt.so"* && "$lib" != *"/libgcc_s.so"* && "$lib" != *"/libstdc++.so"* ]]; then \
@@ -162,7 +162,7 @@ RUN for bin in /mkvtoolnix-portable/bin/mkv*; do \
         done; \
     done
 
-# 3. Create the Wrapper Scripts
+# 3. Create The Wrapper Scripts.
 RUN for bin in mkvmerge mkvpropedit mkvextract mkvinfo; do \
         if [ -f "/mkvtoolnix-portable/bin/$bin" ]; then \
             mv "/mkvtoolnix-portable/bin/$bin" "/mkvtoolnix-portable/bin/$bin.bin"; \
@@ -174,9 +174,9 @@ RUN for bin in mkvmerge mkvpropedit mkvextract mkvinfo; do \
         fi; \
     done
 
-# 4. Strip debugging symbols from the actual binaries to shrink the final size
+# 4. Strip Debugging Symbols From The Actual Binaries To Shrink The Final Size.
 RUN find /mkvtoolnix-portable/bin -type f -name "*.bin" -exec strip --strip-all "{}" \;
 
-# Use a scratch image to export ONLY the portable directory structure back to the host
+# 5. Use A Scratch Image To Export ONLY The Portable Directory Structure Back To The Host.
 FROM scratch AS export-stage
 COPY --from=builder /mkvtoolnix-portable /
