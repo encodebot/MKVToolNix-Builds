@@ -10,26 +10,26 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 # Accept MKVToolNix Version As A Dynamic Build Argument.
 ARG MKV_VERSION
 # 1. Install ONLY The Core Build Tools & Verified Stable C Libraries.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y --no-install-recommends \
     build-essential \
-    cmake \
-    curl \
-    wget \
-    xz-utils \
     bzip2 \
     ca-certificates \
-    pkg-config \
-    ruby \
-    libgmp-dev \
-    libvorbis-dev \
-    libflac-dev \
-    qt6-base-dev \
-    qt6-base-dev-tools \
+    cmake \
+    curl \
     docbook-xsl \
-    xsltproc \
-    po4a \
     file \
     jq \
+    libflac-dev \
+    libgmp-dev \
+    libvorbis-dev \
+    pkg-config \
+    po4a \
+    qt6-base-dev \
+    qt6-base-dev-tools \
+    ruby \
+    wget \
+    xsltproc \
+    xz-utils \
     && rm -rf /var/lib/apt/lists/* && \
     gem install rake --no-document
 
@@ -131,8 +131,9 @@ RUN echo "Fetching latest Boost version..." && \
 #  COMPILE MKVTOOLNIX     #
 # ======================= #
 # 1. Download & Extract MKVToolNix Source.
-RUN wget --progress=dot:giga "https://mkvtoolnix.download/sources/mkvtoolnix-${MKV_VERSION}.tar.xz" -O mkvtoolnix_src.tar.xz && \
-    tar -xf mkvtoolnix_src.tar.xz
+RUN wget --https-only --retry-connrefused --waitretry=5 --tries=5 --progress=dot:giga "https://mkvtoolnix.download/sources/mkvtoolnix-${MKV_VERSION}.tar.xz" -O mkvtoolnix_src.tar.xz && \
+    tar -xf mkvtoolnix_src.tar.xz && \
+    rm -rf mkvtoolnix_src.tar.xz
 
 WORKDIR /mkvtoolnix-${MKV_VERSION}
 
