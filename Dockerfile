@@ -18,6 +18,7 @@ RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y --no-install
     curl \
     docbook-xsl \
     file \
+    git \
     jq \
     libflac-dev \
     libgmp-dev \
@@ -117,8 +118,16 @@ RUN echo "Fetching latest libmatroska version..." && \
 
 # 7. Compile Absolute Latest 'Boost' (Statically Linked).
 RUN echo "Fetching latest Boost version..." && \
-    BOOST_VERSION=$(curl -fsSL "https://archives.boost.io/release/" | grep -oP '(?<=href=")\d+\.\d+\.\d+(?=/")' | sort -Vu | tail -n 1 || true) && \
-    if [ -z "$BOOST_VERSION" ]; then echo "❌ FATAL ERROR: Failed to fetch Boost version"; exit 1; fi && \
+    BOOST_VERSIONS=$(curl -fsSL "https://archives.boost.io/release/" | grep -oP '(?<=href=")\d+\.\d+\.\d+(?=/")' | sort -Vur || true) && \
+    if [ -z "$BOOST_VERSIONS" ]; then echo "❌ FATAL ERROR: Failed to fetch Boost version list"; exit 1; fi && \
+    BOOST_VERSION="" && \
+    for v in $BOOST_VERSIONS; do \
+        vu="${v//./_}"; \
+        if curl -fsSL -o /dev/null --head "https://archives.boost.io/release/${v}/source/boost_${vu}.tar.bz2"; then \
+            BOOST_VERSION="$v"; break; \
+        fi; \
+    done && \
+    if [ -z "$BOOST_VERSION" ]; then echo "❌ FATAL ERROR: No stable Boost tarball found"; exit 1; fi && \
     echo "💡 Building Boost version: $BOOST_VERSION" && \
     BOOST_UNDERSCORE="${BOOST_VERSION//./_}" && \
     wget -q --show-progress "https://archives.boost.io/release/${BOOST_VERSION}/source/boost_${BOOST_UNDERSCORE}.tar.bz2" -O boost.tar.bz2 && \
